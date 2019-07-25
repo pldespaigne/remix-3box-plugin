@@ -5,7 +5,7 @@ const enum Steps { connect, login, logout, noMetaMask };
 
 export class SpacePlugin extends PluginClient {
 
-  isLoaded: boolean; // TODO remove that ! Use `this.loaded` or `this.onload()`
+  isLoaded: boolean; // TODO isLoaded will be a public variable of 'this' in the next release
   step: number;
   mainBtn: HTMLButtonElement;
   enable: boolean;
@@ -35,8 +35,12 @@ export class SpacePlugin extends PluginClient {
     this.methods = [
       'isEnabled',
       'openSpace',
-      'getValue',
-      'setValue',
+      'closeSpace',
+      'getPrivateValue',
+      'setPrivateValue',
+      'getPublicValue',
+      'setPublicValue',
+      'getPublicSpaceData',
     ];
 
     if (!this.ethereumProvider || !this.ethereumProvider.isMetaMask) {
@@ -58,6 +62,7 @@ export class SpacePlugin extends PluginClient {
         [this.address] = await this.ethereumProvider.enable();
         this.step = Steps.login;
         this.mainBtn.innerHTML = 'Login to 3Box';
+        this.connector(); // try to automatically go to next step
         break;
 
       case Steps.login:
@@ -65,7 +70,6 @@ export class SpacePlugin extends PluginClient {
         this.step = Steps.logout;
         this.enable = true;
         this.mainBtn.innerHTML = 'Logout';
-        console.log(this.box);
         break;
 
       case Steps.logout:
@@ -92,12 +96,10 @@ export class SpacePlugin extends PluginClient {
   }
 
   public async openSpace() {
-    console.log('*** openSpace');
     try {
       if (this.requireEnabled()) return false;
       const space = await this.box.openSpace(this.currentRequest.from);
       this.spaces[this.currentRequest.from] = space;
-      console.log(this.spaces);
       return true;
     } catch(err) {
       console.error('An error happened during "openSpace()" :', err);
@@ -105,18 +107,36 @@ export class SpacePlugin extends PluginClient {
     }
   }
 
-  public async getValue(key: string) {
-    console.log('*** getValue', key);
+  public async closeSpace() {
+    if (this.requireEnabled()) return false;
+    console.log(this.spaces);
+    delete this.spaces[this.currentRequest.from];
+    console.log(this.spaces);
+    return true;
+  }
+
+  public async getPrivateValue(key: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    
     return await this.spaces[this.currentRequest.from].private.get(key);
   }
 
-  public async setValue(key: string, value: string) {
-    console.log('*** setValue', key, value);
+  public async setPrivateValue(key: string, value: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    
     return await this.spaces[this.currentRequest.from].private.set(key, value);
+  }
+
+  public async getPublicValue(key: string) {
+    if (this.requireSpaceOpened(this.currentRequest.from)) return;
+    return await this.spaces[this.currentRequest.from].public.get(key);
+  }
+
+  public async setPublicValue(key: string, value: string) {
+    if (this.requireSpaceOpened(this.currentRequest.from)) return;
+    return await this.spaces[this.currentRequest.from].public.set(key, value);
+  }
+
+  public async getPublicSpaceData(address: string, spaceName: string) {
+    return await Box.getSpace(address, spaceName);
   }
 
   //-----------------------------------------
@@ -141,10 +161,6 @@ export class SpacePlugin extends PluginClient {
 
   private requireSpaceOpened(spaceName: string) {
     if (this.requireEnabled() || !this.spaces[spaceName]) {
-      console.warn(spaceName);
-      console.warn(this.spaces);
-      console.warn(this.spaces[spaceName]);
-      console.warn(!!this.spaces[spaceName]);
       console.error('Unkown Space ! Please call openSpace() before.');
       return true;
     }
