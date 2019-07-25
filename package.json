@@ -1,0 +1,28 @@
+{
+  "name": "remix-3box-plugin",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "build": "npx webpack --config webpack.config.js",
+    "dev": "static .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "npm run build && npm run deploy:https && npm run deploy:http",
+    "deploy:https": "surge . https://remix-3box.surge.sh",
+    "deploy:http": "surge . http://remix-3box.surge.sh"
+  },
+  "author": "@pldespaigne",
+  "license": "ISC",
+  "devDependencies": {
+    "node-static": "^0.7.11",
+    "surge": "^0.21.3",
+    "ts-loader": "^6.0.4",
+    "typescript": "^3.5.3",
+    "webpack": "^4.37.0",
+    "webpack-cli": "^3.3.6"
+  },
+  "dependencies": {
+    "3box": "^1.10.0",
+    "@remixproject/plugin": "^0.1.8"
+  }
+}
