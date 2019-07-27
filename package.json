@@ -7,9 +7,7 @@
     "build": "npx webpack --config webpack.config.js",
     "dev": "static .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npm run build && npm run deploy:https && npm run deploy:http",
-    "deploy:https": "surge . https://remix-3box.surge.sh",
-    "deploy:http": "surge . http://remix-3box.surge.sh"
+    "deploy": "npm run build && surge . remix-3box.surge.sh"
   },
   "author": "@pldespaigne",
   "license": "ISC",
