@@ -5,7 +5,6 @@ const enum Steps { connect, login, logout, noMetaMask };
 
 export class SpacePlugin extends PluginClient {
 
-  isLoaded: boolean; // TODO isLoaded will be a public variable of 'this' in the next release
   step: number;
   mainBtn: HTMLButtonElement;
   enable: boolean;
@@ -20,27 +19,26 @@ export class SpacePlugin extends PluginClient {
     super();
     this.onload().then(()=>{
       console.log('*** plugin loaded');
-      this.isLoaded = true;
       this.mainBtn.addEventListener('click', () => this.connector());
     });
 
-    
-
-    this.isLoaded = false;
     this.enable = false;
     this.step = Steps.connect;
     this.mainBtn = document.querySelector<HTMLButtonElement>('#main-btn')!;
     this.ethereumProvider = window['ethereum'];
     this.spaces = {};
     this.methods = [
-      'isEnabled',
-      'openSpace',
-      'closeSpace',
-      'getPrivateValue',
-      'setPrivateValue',
-      'getPublicValue',
-      'setPublicValue',
-      'getPublicSpaceData',
+      'login', // connect metamask to this plugin, then login to 3box
+      'isEnabled', // return true is metamask AND 3box are connected/logged to this plugin
+      'getUserAddress', // return the user's metamask eth address
+      'openSpace', // open a space named after the plugin that call this function
+      'closeSpace', // close the space named after the plugin that call this function
+      'isSpaceOpened', // return true if the calling plugin has already an opened space
+      'getSpacePrivateValue',
+      'setSpacePrivateValue',
+      'getSpacePublicValue',
+      'setSpacePublicValue',
+      'getSpacePublicData',
     ];
 
     if (!this.ethereumProvider || !this.ethereumProvider.isMetaMask) {
@@ -59,28 +57,10 @@ export class SpacePlugin extends PluginClient {
 
     switch (this.step) {
       case Steps.connect:
-        [this.address] = await this.ethereumProvider.enable();
-        this.step = Steps.login;
-        this.mainBtn.innerHTML = 'Login to 3Box';
-        this.connector(); // try to automatically go to next step
+      case Steps.login: this.login();
         break;
-
-      case Steps.login:
-        this.box = await Box.openBox(this.address, this.ethereumProvider);
-        this.step = Steps.logout;
-        this.enable = true;
-        this.mainBtn.innerHTML = 'Logout';
+      case Steps.logout: this.logout();
         break;
-
-      case Steps.logout:
-        delete this.address;
-        delete this.ethereumProvider;
-        delete this.box;
-        this.enable = false;
-        this.step = Steps.connect;
-        this.mainBtn.innerHTML = 'Connect MetaMask';
-        break;
-
       default: console.warn('Please Download MetaMask to continue'); // TODO better error
         break;
     }
@@ -90,9 +70,53 @@ export class SpacePlugin extends PluginClient {
   //        FUNCTIONS EXPOSED TO CALL
   //-----------------------------------------
 
+  public async login(){
+    if (this.requireLoaded()) return;
+
+    switch (this.step) {
+      case Steps.connect:
+        [this.address] = await this.ethereumProvider.enable();
+        this.step = Steps.login;
+        this.mainBtn.innerHTML = 'Login to 3Box';
+        this.login(); // try to automatically go to next step
+        break;
+
+      case Steps.login:
+        this.box = await Box.openBox(this.address, this.ethereumProvider);
+        this.step = Steps.logout;
+        this.enable = true;
+        this.mainBtn.innerHTML = 'Logout';
+        if (!!this.currentRequest && !!this.currentRequest.from) { // if login has been called by an external plugin, automatically try to open space
+          this.openSpace(); 
+        }
+        break;
+    }
+    return true;
+  }
+  
+  private logout(){
+    delete this.address;
+    delete this.box;
+    this.spaces = {};
+    this.enable = false;
+    this.step = Steps.connect;
+    this.mainBtn.innerHTML = 'Connect MetaMask';
+    return true;
+  }
+
+  public getUserAddress() {
+    if (this.requireLoaded()) return;
+    return this.address;
+  }
+
   public isEnabled() {
     if (this.requireLoaded()) return;
     return this.enable;
+  }
+
+  public isSpaceOpened() {
+    if (this.requireEnabled()) return;
+    return !!this.spaces[this.currentRequest.from];
   }
 
   public async openSpace() {
@@ -109,33 +133,32 @@ export class SpacePlugin extends PluginClient {
 
   public async closeSpace() {
     if (this.requireEnabled()) return false;
-    console.log(this.spaces);
     delete this.spaces[this.currentRequest.from];
-    console.log(this.spaces);
     return true;
   }
 
-  public async getPrivateValue(key: string) {
+  public async getSpacePrivateValue(key: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
     return await this.spaces[this.currentRequest.from].private.get(key);
   }
 
-  public async setPrivateValue(key: string, value: string) {
+  public async setSpacePrivateValue(key: string, value: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
     return await this.spaces[this.currentRequest.from].private.set(key, value);
   }
 
-  public async getPublicValue(key: string) {
+  public async getSpacePublicValue(key: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
     return await this.spaces[this.currentRequest.from].public.get(key);
   }
 
-  public async setPublicValue(key: string, value: string) {
+  public async setSpacePublicValue(key: string, value: string) {
     if (this.requireSpaceOpened(this.currentRequest.from)) return;
     return await this.spaces[this.currentRequest.from].public.set(key, value);
   }
 
-  public async getPublicSpaceData(address: string, spaceName: string) {
+  public async getSpacePublicData(address: string, spaceName: string) {
+    if (this.requireEnabled()) return;
     return await Box.getSpace(address, spaceName);
   }
 
