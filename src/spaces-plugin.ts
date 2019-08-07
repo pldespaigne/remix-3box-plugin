@@ -71,27 +71,29 @@ export class SpacePlugin extends PluginClient {
   //-----------------------------------------
 
   public async login(){
-    if (this.requireLoaded()) return;
+    if (this.requireLoaded()) return false;
 
-    switch (this.step) {
-      case Steps.connect:
-        [this.address] = await this.ethereumProvider.enable();
-        this.step = Steps.login;
-        this.mainBtn.innerHTML = 'Login to 3Box';
-        this.login(); // try to automatically go to next step
-        break;
-
-      case Steps.login:
-        this.box = await Box.openBox(this.address, this.ethereumProvider);
-        this.step = Steps.logout;
-        this.enable = true;
-        this.mainBtn.innerHTML = 'Logout';
-        if (!!this.currentRequest && !!this.currentRequest.from) { // if login has been called by an external plugin, automatically try to open space
-          this.openSpace(); 
-        }
-        break;
+    if (this.step === Steps.connect) {
+      [this.address] = await this.ethereumProvider.enable();
+      this.step = Steps.login;
+      this.mainBtn.innerHTML = 'Login to 3Box';
+      this.emit('connected');
     }
-    return true;
+
+    if (this.step === Steps.login) {
+      this.box = await Box.openBox(this.address, this.ethereumProvider);
+      this.step = Steps.logout;
+      this.enable = true;
+      this.mainBtn.innerHTML = 'Logout';
+      this.emit('loggedIn');
+      if (!!this.currentRequest && !!this.currentRequest.from) { // if login has been called by an external plugin, automatically try to open space
+        return this.openSpace(); 
+      } else {
+        return true;
+      }
+    }
+
+    return false;
   }
   
   private logout(){
@@ -101,6 +103,7 @@ export class SpacePlugin extends PluginClient {
     this.enable = false;
     this.step = Steps.connect;
     this.mainBtn.innerHTML = 'Connect MetaMask';
+    this.emit('loggedOut');
     return true;
   }
 
@@ -124,6 +127,7 @@ export class SpacePlugin extends PluginClient {
       if (this.requireEnabled()) return false;
       const space = await this.box.openSpace(this.currentRequest.from);
       this.spaces[this.currentRequest.from] = space;
+      this.emit('spaceOpened', this.currentRequest.from);
       return true;
     } catch(err) {
       console.error('An error happened during "openSpace()" :', err);
@@ -134,6 +138,7 @@ export class SpacePlugin extends PluginClient {
   public async closeSpace() {
     if (this.requireEnabled()) return false;
     delete this.spaces[this.currentRequest.from];
+    this.emit('spaceClosed', this.currentRequest.from);
     return true;
   }
 
