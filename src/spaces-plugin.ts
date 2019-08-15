@@ -18,7 +18,6 @@ export class SpacePlugin extends PluginClient {
   constructor() {
     super();
     this.onload().then(()=>{
-      console.log('*** plugin loaded');
       this.mainBtn.addEventListener('click', () => this.connector());
     });
 
@@ -77,7 +76,7 @@ export class SpacePlugin extends PluginClient {
       [this.address] = await this.ethereumProvider.enable();
       this.step = Steps.login;
       this.mainBtn.innerHTML = 'Login to 3Box';
-      this.emit('connected');
+      this.emit('enabled');
     }
 
     if (this.step === Steps.login) {
@@ -86,7 +85,7 @@ export class SpacePlugin extends PluginClient {
       this.enable = true;
       this.mainBtn.innerHTML = 'Logout';
       this.emit('loggedIn');
-      if (!!this.currentRequest && !!this.currentRequest.from) { // if login has been called by an external plugin, automatically try to open space
+      if (!!this.currentRequest && !!this.spaceName) { // if login has been called by an external plugin, automatically try to open space
         return this.openSpace(); 
       } else {
         return true;
@@ -107,6 +106,10 @@ export class SpacePlugin extends PluginClient {
     return true;
   }
 
+  get spaceName() {
+    return `remix-${this.currentRequest.from}`;
+  }
+
   public getUserAddress() {
     if (this.requireLoaded()) return;
     return this.address;
@@ -119,15 +122,15 @@ export class SpacePlugin extends PluginClient {
 
   public isSpaceOpened() {
     if (this.requireEnabled()) return;
-    return !!this.spaces[this.currentRequest.from];
+    return !!this.spaces[this.spaceName];
   }
 
   public async openSpace() {
     try {
       if (this.requireEnabled()) return false;
-      const space = await this.box.openSpace(this.currentRequest.from);
-      this.spaces[this.currentRequest.from] = space;
-      this.emit('spaceOpened', this.currentRequest.from);
+      const space = await this.box.openSpace(this.spaceName);
+      this.spaces[this.spaceName] = space;
+      this.emit('spaceOpened', this.spaceName);
       return true;
     } catch(err) {
       console.error('An error happened during "openSpace()" :', err);
@@ -137,32 +140,32 @@ export class SpacePlugin extends PluginClient {
 
   public async closeSpace() {
     if (this.requireEnabled()) return false;
-    delete this.spaces[this.currentRequest.from];
-    this.emit('spaceClosed', this.currentRequest.from);
+    delete this.spaces[this.spaceName];
+    this.emit('spaceClosed', this.spaceName);
     return true;
   }
 
   public async getSpacePrivateValue(key: string) {
-    if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    return await this.spaces[this.currentRequest.from].private.get(key);
+    if (this.requireSpaceOpened(this.spaceName)) return;
+    return await this.spaces[this.spaceName].private.get(key);
   }
 
   public async setSpacePrivateValue(key: string, value: string) {
-    if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    return await this.spaces[this.currentRequest.from].private.set(key, value);
+    if (this.requireSpaceOpened(this.spaceName)) return;
+    return await this.spaces[this.spaceName].private.set(key, value);
   }
 
   public async getSpacePublicValue(key: string) {
-    if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    return await this.spaces[this.currentRequest.from].public.get(key);
+    if (this.requireSpaceOpened(this.spaceName)) return;
+    return await this.spaces[this.spaceName].public.get(key);
   }
 
   public async setSpacePublicValue(key: string, value: string) {
-    if (this.requireSpaceOpened(this.currentRequest.from)) return;
-    return await this.spaces[this.currentRequest.from].public.set(key, value);
+    if (this.requireSpaceOpened(this.spaceName)) return;
+    return await this.spaces[this.spaceName].public.set(key, value);
   }
 
-  public async getSpacePublicData(address: string, spaceName: string) {
+  public async getSpacePublicData(address: string, spaceName: string = this.spaceName) {
     if (this.requireEnabled()) return;
     return await Box.getSpace(address, spaceName);
   }
