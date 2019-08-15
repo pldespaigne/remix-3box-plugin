@@ -38,6 +38,7 @@ export class SpacePlugin extends PluginClient {
       'getSpacePublicValue',
       'setSpacePublicValue',
       'getSpacePublicData',
+      'getSpaceName' // Gives the name of the space currently used
     ];
 
     if (!this.ethereumProvider || !this.ethereumProvider.isMetaMask) {
@@ -85,7 +86,7 @@ export class SpacePlugin extends PluginClient {
       this.enable = true;
       this.mainBtn.innerHTML = 'Logout';
       this.emit('loggedIn');
-      if (!!this.currentRequest && !!this.spaceName) { // if login has been called by an external plugin, automatically try to open space
+      if (!!this.currentRequest && !!this.getSpaceName()) { // if login has been called by an external plugin, automatically try to open space
         return this.openSpace(); 
       } else {
         return true;
@@ -106,7 +107,7 @@ export class SpacePlugin extends PluginClient {
     return true;
   }
 
-  get spaceName() {
+  public getSpaceName() {
     return `remix-${this.currentRequest.from}`;
   }
 
@@ -122,15 +123,15 @@ export class SpacePlugin extends PluginClient {
 
   public isSpaceOpened() {
     if (this.requireEnabled()) return;
-    return !!this.spaces[this.spaceName];
+    return !!this.spaces[this.getSpaceName()];
   }
 
   public async openSpace() {
     try {
       if (this.requireEnabled()) return false;
-      const space = await this.box.openSpace(this.spaceName);
-      this.spaces[this.spaceName] = space;
-      this.emit('spaceOpened', this.spaceName);
+      const space = await this.box.openSpace(this.getSpaceName());
+      this.spaces[this.getSpaceName()] = space;
+      this.emit('spaceOpened', this.getSpaceName());
       return true;
     } catch(err) {
       console.error('An error happened during "openSpace()" :', err);
@@ -140,32 +141,32 @@ export class SpacePlugin extends PluginClient {
 
   public closeSpace() {
     if (this.requireEnabled()) return false;
-    delete this.spaces[this.spaceName];
-    this.emit('spaceClosed', this.spaceName);
+    delete this.spaces[this.getSpaceName()];
+    this.emit('spaceClosed', this.getSpaceName());
     return true;
   }
 
   public getSpacePrivateValue(key: string) {
-    if (this.requireSpaceOpened(this.spaceName)) return;
-    return this.spaces[this.spaceName].private.get(key);
+    if (this.requireSpaceOpened(this.getSpaceName())) return;
+    return this.spaces[this.getSpaceName()].private.get(key);
   }
 
   public setSpacePrivateValue(key: string, value: string) {
-    if (this.requireSpaceOpened(this.spaceName)) return;
-    return this.spaces[this.spaceName].private.set(key, value);
+    if (this.requireSpaceOpened(this.getSpaceName())) return;
+    return this.spaces[this.getSpaceName()].private.set(key, value);
   }
 
   public getSpacePublicValue(key: string) {
-    if (this.requireSpaceOpened(this.spaceName)) return;
-    return this.spaces[this.spaceName].public.get(key);
+    if (this.requireSpaceOpened(this.getSpaceName())) return;
+    return this.spaces[this.getSpaceName()].public.get(key);
   }
 
   public setSpacePublicValue(key: string, value: string) {
-    if (this.requireSpaceOpened(this.spaceName)) return;
-    return this.spaces[this.spaceName].public.set(key, value);
+    if (this.requireSpaceOpened(this.getSpaceName())) return;
+    return this.spaces[this.getSpaceName()].public.set(key, value);
   }
 
-  public getSpacePublicData(address: string, spaceName: string = this.spaceName) {
+  public getSpacePublicData(address: string, spaceName: string = this.getSpaceName()) {
     if (this.requireEnabled()) return;
     return Box.getSpace(address, spaceName);
   }
