@@ -138,36 +138,36 @@ export class SpacePlugin extends PluginClient {
     }
   }
 
-  public async closeSpace() {
+  public closeSpace() {
     if (this.requireEnabled()) return false;
     delete this.spaces[this.spaceName];
     this.emit('spaceClosed', this.spaceName);
     return true;
   }
 
-  public async getSpacePrivateValue(key: string) {
+  public getSpacePrivateValue(key: string) {
     if (this.requireSpaceOpened(this.spaceName)) return;
-    return await this.spaces[this.spaceName].private.get(key);
+    return this.spaces[this.spaceName].private.get(key);
   }
 
-  public async setSpacePrivateValue(key: string, value: string) {
+  public setSpacePrivateValue(key: string, value: string) {
     if (this.requireSpaceOpened(this.spaceName)) return;
-    return await this.spaces[this.spaceName].private.set(key, value);
+    return this.spaces[this.spaceName].private.set(key, value);
   }
 
-  public async getSpacePublicValue(key: string) {
+  public getSpacePublicValue(key: string) {
     if (this.requireSpaceOpened(this.spaceName)) return;
-    return await this.spaces[this.spaceName].public.get(key);
+    return this.spaces[this.spaceName].public.get(key);
   }
 
-  public async setSpacePublicValue(key: string, value: string) {
+  public setSpacePublicValue(key: string, value: string) {
     if (this.requireSpaceOpened(this.spaceName)) return;
-    return await this.spaces[this.spaceName].public.set(key, value);
+    return this.spaces[this.spaceName].public.set(key, value);
   }
 
-  public async getSpacePublicData(address: string, spaceName: string = this.spaceName) {
+  public getSpacePublicData(address: string, spaceName: string = this.spaceName) {
     if (this.requireEnabled()) return;
-    return await Box.getSpace(address, spaceName);
+    return Box.getSpace(address, spaceName);
   }
 
   //-----------------------------------------
