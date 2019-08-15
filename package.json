@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "3box": "^1.10.3",
+    "@ethersproject/address": "^5.0.0-beta.127",
     "@remixproject/plugin": "^0.1.9"
   }
 }

@@ -1,5 +1,6 @@
 import { PluginClient } from '@remixproject/plugin';
 import { default as Box} from '3box';
+import { getAddress } from '@ethersproject/address';
 
 const enum Steps { connect, login, logout, noMetaMask };
 
@@ -74,7 +75,8 @@ export class SpacePlugin extends PluginClient {
     if (this.requireLoaded()) return false;
 
     if (this.step === Steps.connect) {
-      [this.address] = await this.ethereumProvider.enable();
+      const [address] = await this.ethereumProvider.enable();
+      this.address = getAddress(address);
       this.step = Steps.login;
       this.mainBtn.innerHTML = 'Login to 3Box';
       this.emit('enabled');
