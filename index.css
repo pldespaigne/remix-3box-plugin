@@ -1,17 +1,22 @@
+html, body {
+  height: 100%;
+  margin: 0;
+}
 body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
-header, footer {
+#box-plugin header,
+#box-plugin footer {
   height: 45px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-section {
+#box-plugin article {
   flex: 1;
   display: flex;
   flex-direction: column;
