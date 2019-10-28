@@ -72,30 +72,30 @@ export class SpacePlugin extends PluginClient {
   //-----------------------------------------
 
   public async login(){
-    if (this.requireLoaded()) return false;
+    try {
+      if (this.requireLoaded()) return false;
 
-    if (this.step === Steps.connect) {
-      const [address] = await this.ethereumProvider.enable();
-      this.address = getAddress(address);
-      this.step = Steps.login;
-      this.mainBtn.innerHTML = 'Login to 3Box';
-      this.emit('enabled');
-    }
-
-    if (this.step === Steps.login) {
-      this.box = await Box.openBox(this.address, this.ethereumProvider);
-      this.step = Steps.logout;
-      this.enable = true;
-      this.mainBtn.innerHTML = 'Logout';
-      this.emit('loggedIn');
-      if (!!this.currentRequest && !!this.getSpaceName()) { // if login has been called by an external plugin, automatically try to open space
-        return this.openSpace(); 
-      } else {
+      if (this.step === Steps.connect) {
+        const [address] = await this.ethereumProvider.enable();
+        this.address = getAddress(address);
+        this.step = Steps.login;
+        this.mainBtn.innerHTML = 'Login to 3Box';
+        this.emit('enabled');
+      }
+  
+      if (this.step === Steps.login) {
+        this.box = await Box.openBox(this.address, this.ethereumProvider);
+        this.step = Steps.logout;
+        this.enable = true;
+        this.mainBtn.innerHTML = 'Logout';
+        this.emit('loggedIn');
         return true;
       }
+  
+      return false;
+    } catch (err) {
+      throw err;
     }
-
-    return false;
   }
   
   private logout(){
